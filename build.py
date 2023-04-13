@@ -101,13 +101,14 @@ class Vulkan(BuildClass):
 
 
 
-
 class Virglrenderer(BuildClass):
 	def __init__(self):
 		super().__init__("virglrenderer")
 
 	def configure(self):
-		subprocess.run(["meson", f"-Dc_args=-I{os.getcwd()}/source/angle/include",         "-Dvenus-experimental=true",
+		subprocess.run(["meson", "setup","--reconfigure", f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include",
+			"-Dvenus-experimental=true",
+			"-Dtests=false",
 		f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/virglrenderer"])
@@ -138,11 +139,13 @@ class Qemu(BuildClass):
 		--disable-vde
 		--disable-gio
 		--enable-cocoa
-		--disable-curl"""
-		self.qemu_flags=textwrap.dedent(self.qemu_flags).splitlines()
+		--disable-curl
+		--enable-trace-backends=simple
+		"""
+		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
 		environment["PKG_CONFIG_PATH"]=os.getcwd()+"/lib/pkgconfig"
 	def configure(self):
-		subprocess.run(["../../source/qemu/configure"]+qemu_flags,env=environment,cwd="build/qemu")
+		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
 		subprocess.run(["meson","install"],cwd="build/qemu")
 
@@ -150,11 +153,11 @@ if "--depot" in sys.argv:
 	git_clone("https://chromium.googlesource.com/chromium/tools/depot_tools.git")
 
 if '--dependencies' in sys.argv:
-	subprocess.run(["sudo","port","install","meson","ninja"])
+	subprocess.run(["sudo","port","install","meson","ninja","molten-vk","vulkan-loader"])
 	subprocess.run(["brew","install","glib","pkgconfig"])
 
-for target in ["angle","libepoxy","vulkan","virglrenderer","qemu"]:
-	eval(f"{target.title()}().run()")
+for target in BuildClass.__subclasses__():
+	target().run()
 
 if '--clean' in sys.argv:
 	for directory in ['build','source','depot_tools']:
@@ -165,3 +168,5 @@ if '--clean' in sys.argv:
 		
 	subprocess.run(["sudo","port","uninstall","meson","ninja"])
 	subprocess.run(["brew","uninstall","glib","pkgconfig"])
+
+#cmake -DDEPENDENCY_RESOLUTION=DOWNLOAD ..
