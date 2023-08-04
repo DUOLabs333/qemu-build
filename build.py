@@ -106,9 +106,8 @@ class Virglrenderer(BuildClass):
 		super().__init__("virglrenderer")
 
 	def configure(self):
-		subprocess.run(["meson", "setup","--reconfigure", f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include",
-			"-Dvenus-experimental=true",
-			"-Dtests=false",
+		subprocess.run(["meson", "setup", "--reconfigure",f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include",
+			"-Dtests=false","-Dvenus-experimental=true",
 		f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/virglrenderer"])
@@ -140,10 +139,10 @@ class Qemu(BuildClass):
 		--disable-gio
 		--enable-cocoa
 		--disable-curl
-		--enable-trace-backends=simple
 		"""
+
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
-		environment["PKG_CONFIG_PATH"]=os.getcwd()+"/lib/pkgconfig"
+		environment["PKG_CONFIG_PATH"]=":".join([os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
 	def configure(self):
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
@@ -154,7 +153,7 @@ if "--depot" in sys.argv:
 
 if '--dependencies' in sys.argv:
 	subprocess.run(["sudo","port","install","meson","ninja","molten-vk","vulkan-loader"])
-	subprocess.run(["brew","install","glib","pkgconfig"])
+	subprocess.run(["brew","install","glib","pkgconfig","spice-protocol"])
 
 for target in BuildClass.__subclasses__():
 	target().run()
@@ -167,6 +166,6 @@ if '--clean' in sys.argv:
 		subprocess.run(["sudo","rm","-rf",os.path.expanduser('~')+'/'+directory])
 		
 	subprocess.run(["sudo","port","uninstall","meson","ninja"])
-	subprocess.run(["brew","uninstall","glib","pkgconfig"])
+	subprocess.run(["brew","uninstall","glib","pkgconfig","spice-protocol"])
 
 #cmake -DDEPENDENCY_RESOLUTION=DOWNLOAD ..
