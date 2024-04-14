@@ -126,7 +126,7 @@ class Qemu(BuildClass):
 		--disable-bsd-user
 		--disable-guest-agent
 		--disable-gnutls
-		--enable-curses
+		--disable-curses
 		--disable-libssh
 		--disable-nettle
 		--disable-lzo
@@ -148,7 +148,7 @@ class Qemu(BuildClass):
 		"""
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
-		environment["PKG_CONFIG_PATH"]=":".join([os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
+		environment["PKG_CONFIG_PATH"]=os.pathsep.join([environment["PKG_CONFIG_PATH"],os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
 	def configure(self):
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
