@@ -86,7 +86,7 @@ class Libepoxy(BuildClass):
 		super().__init__("libepoxy")
 
 	def configure(self):
-		find_and_replace("host_machine ==", "host_system ==", "source/libepoxy/meson.build")
+		find_and_replace("source/libepoxy/meson.build", "host_machine ==", "host_system ==")
 		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include","-Degl=yes", "-Dx11=false", f"--prefix={os.getcwd()}","build/libepoxy","source/libepoxy"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/libepoxy"])
@@ -112,8 +112,8 @@ class Virglrenderer(BuildClass):
 		super().__init__("virglrenderer")
 
 	def configure(self):
-		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include","-Dcpp_link_args=-framework IOSurface -framework CoreFoundation",
-			"-Dtests=false","-Dvenus-experimental=true",
+		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include",
+			"-Dtests=false",
 		f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/virglrenderer"])
