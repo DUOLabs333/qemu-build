@@ -4,7 +4,7 @@ import textwrap
 
 def find_and_replace(filename,old,new):
 	with open(filename,"w") as f:
-		f.write(open("filename","r").read().replace(old,new))
+		f.write(open(filename,"r").read().replace(old,new))
 
 environment=os.environ.copy()
 root_path=os.path.dirname(__file__)
@@ -53,8 +53,16 @@ class Angle(BuildClass):
 		super().__init__("angle")
 
 	def download(self):
-		super().download()
-		subprocess.run(["scripts/bootstrap.py"],env=environment)
+		#super().download()
+		git_clone("https://chromium.googlesource.com/angle/angle.git", "main", "source")
+	def configure(self):
+		environment["PATH"]=os.path.join(os.getcwd(),"depot_tools")+os.pathsep+environment["PATH"]
+		environment["DEPOT_TOOLS_UPDATE"]='0'
+
+		os.chdir("source/angle")
+
+		subprocess.run(["python2","scripts/bootstrap.py"],env=environment)
+
 		subprocess.run(["gclient","sync","-D","-j12","--no-history","--shallow"],env=environment)
 		find_and_replace("build/mac/find_sdk.py","best_sdk = sorted(sdks, key=parse_version)[0]","best_sdk = sorted(sdks, key=parse_version)[-1]")
 		find_and_replace("build/mac/find_sdk.py","Platforms/MacOSX.platform/Developer/SDKs","SDKs")
@@ -65,10 +73,7 @@ class Angle(BuildClass):
 				settings['xcode_build']='11.2.0'
 				return
 			"""))
-	def configure(self):
-		environment["DEPOT_TOOLS_UPDATE"]='0'
-		environment["PATH"]=os.path.join(os.getcwd(),"depot_tools")+os.pathsep+environment["PATH"]
-		os.chdir("source/angle")
+
 		subprocess.run(["gn","gen", "--args=is_debug=false angle_build_tests=false", "../../build/angle"],env=environment)
 		os.chdir("../..")
 
@@ -81,7 +86,8 @@ class Libepoxy(BuildClass):
 		super().__init__("libepoxy")
 
 	def configure(self):
-		subprocess.run(["meson", f"-Dc_args=-I{os.getcwd()}/source/angle/include","-Degl=yes", "-Dx11=false", f"--prefix={os.getcwd()}","build/libepoxy","source/libepoxy"])
+		find_and_replace("host_machine ==", "host_system ==", "source/libepoxy/meson.build")
+		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include","-Degl=yes", "-Dx11=false", f"--prefix={os.getcwd()}","build/libepoxy","source/libepoxy"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/libepoxy"])
 
@@ -106,7 +112,7 @@ class Virglrenderer(BuildClass):
 		super().__init__("virglrenderer")
 
 	def configure(self):
-		subprocess.run(["meson", "setup", "--reconfigure",f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include",
+		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include -I{os.getcwd()}/include","-Dcpp_link_args=-framework IOSurface -framework CoreFoundation",
 			"-Dtests=false","-Dvenus-experimental=true",
 		f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
 	def build(self):
