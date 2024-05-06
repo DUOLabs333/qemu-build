@@ -124,7 +124,6 @@ class Qemu(BuildClass):
 		super().__init__("qemu")
 		self.qemu_flags=f"""
 		--disable-bsd-user
-		--disable-guest-agent
 		--disable-gnutls
 		--disable-curses
 		--disable-libssh
@@ -145,6 +144,7 @@ class Qemu(BuildClass):
 		--disable-gio
 		--enable-cocoa
 		--disable-curl
+		--enable-libusb
 		"""
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
