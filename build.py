@@ -3,8 +3,9 @@ import subprocess
 import textwrap
 
 def find_and_replace(filename,old,new):
+	file_str=open(filename,"r").read()
 	with open(filename,"w") as f:
-		f.write(open(filename,"r").read().replace(old,new))
+		f.write(file_str.replace(old,new))
 
 environment=os.environ.copy()
 root_path=os.path.dirname(__file__)
@@ -160,12 +161,21 @@ class Qemu(BuildClass):
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
 		environment["PKG_CONFIG_PATH"]=os.pathsep.join([environment["PKG_CONFIG_PATH"],os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
+		environment["CC"]="clang"
+		environment["CXX"]="clang++"
+
+		"""Only needed on < 12"""
+		find_and_replace("source/qemu/block/file-posix.c", "IOMainPort", "IOMasterPort")
+		find_and_replace("source/qemu/audio/coreaudio.m", "kAudioObjectPropertyElementMain", "kAudioObjectPropertyElementMaster")
+
 	def configure(self):
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
-		subprocess.run(["meson","install"],cwd="build/qemu")
-		delete_everything_in_folder("build/qemu/tests")
-		delete_everything_in_folder("build/qemu/pc-bios")
+		num_processors=subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"], text=True).strip()
+		retcode=subprocess.run(["make", f"-j{num_processors}", "install"],cwd="build/qemu").returncode
+		if (retcode==0):
+			delete_everything_in_folder("build/qemu/tests")
+			delete_everything_in_folder("build/qemu/pc-bios")
 
 
 if "--depot" in sys.argv:
