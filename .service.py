@@ -1,8 +1,9 @@
-import subprocess
+import subprocess, os
 #Menu bar is 56 pixels
 
 
-Down("pkill -9 qemu-system-aarch64")
+SOCKET=os.path.join(self.workdir,"qemu-monitor.sock")
+Down("sudo pkill -9 qemu-system-aarch64")
 Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarch64
 -M virt,accel=hvf 
 -m 8G
@@ -11,6 +12,8 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 -kernel Linux.utm/Data/Image 
 -initrd Linux.utm/Data/initramfs-linux.img 
 -append "root=/dev/vda rw console=ttyAMA0 video=Virtual-1:2880x1690@60"
+
+-monitor unix:{SOCKET},server,nowait
 
 -device pcie-root-port,id=pcie
 
@@ -27,7 +30,7 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 {'-icount sleep=off' if 'no-sleep' in self.flags else ''}
 
 -device virtio-gpu-gl-pci,addr=0x0.0x1,bus=pcie,edid=off,xres=2880,yres=1690
--display cocoa,gl=es,full-grab=on,zoom-to-fit=off,zoom-interpolation=on
+-display cocoa,gl=es,full-grab=on,zoom-to-fit=on,zoom-interpolation=on
 
 -device virtio-keyboard-pci,addr=0x0.0x2,bus=pcie
 
@@ -35,9 +38,15 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 -device virtio-serial-pci,addr=0x0.0x6,bus=pcie
 -device virtserialport,chardev=spice,name=com.redhat.spice.0
 
--run-with user="$(id -u):$(id -g)"
+-device qemu-xhci,id=usb-controller-0
 
 """.replace("\n"," "))
+
+while True:
+    if os.path.exists(SOCKET):
+        Run(f"sudo chown $(whoami) {SOCKET}", track=False)
+        break
+
 
 #-run-with user="$(id -u):$(id -g)"
 
