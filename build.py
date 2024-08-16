@@ -161,8 +161,12 @@ class Qemu(BuildClass):
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
 		environment["PKG_CONFIG_PATH"]=os.pathsep.join([environment["PKG_CONFIG_PATH"],os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
-		environment["CC"]="clang"
-		environment["CXX"]="clang++"
+		environment["CC"]="/usr/bin/clang"
+		environment["CC_LD"]="/usr/bin/ld"
+		
+		environment["CXX"]="/usr/bin/clang++"
+
+		environment["objcc"]="/usr/bin/clang"
 
 		"""Only needed on < 12"""
 		find_and_replace("source/qemu/block/file-posix.c", "IOMainPort", "IOMasterPort")

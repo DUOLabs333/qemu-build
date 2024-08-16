@@ -15,7 +15,7 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 
 -monitor unix:{SOCKET},server,nowait
 
--device pcie-root-port,id=pcie
+-device pcie-root-port,id=pcie,slot=0
 
 -drive if=none,file=Linux.utm/Data/Arch.img,format=raw,index=0,media=disk,id=drive1
 -device virtio-blk-pci,addr=0x0.0x5,backend_defaults=on,bus=pcie,drive=drive1
@@ -42,10 +42,11 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 
 """.replace("\n"," "))
 
-while True:
-    if os.path.exists(SOCKET):
-        Run(f"sudo chown $(whoami) {SOCKET}", track=False)
-        break
+if False:
+    while True:
+        if os.path.exists(SOCKET):
+            Run(f"sudo chown $(whoami) {SOCKET}", track=True)
+            break
 
 
 #-run-with user="$(id -u):$(id -g)"
@@ -74,6 +75,7 @@ while True:
 
 #/Applications/Tunnelblick.app/Contents/Resources/openvpnstart loadKexts 2
 #defaults  write  net.tunnelblick.tunnelblick  doNotLaunchOnLogin  -bool  yes
+#Turn on Internet Sharing with the bridge
 
 """
 -drive if=none,file=/dev/disk4,format=raw,index=3,media=disk,id=drive3,cache=writethrough
@@ -81,8 +83,8 @@ while True:
 """
 
 """
--netdev tap,id=net1,ifname=tap1,script=$HOME/qemu-ifup,downscript=$HOME/qemu-ifdown
--device virtio-net-pci,addr=0x0.0x7,bus=pcie,netdev=net1,mac=1E:4C:16:AE:DF:6B
+-netdev tap,id=net0,ifname=tap1,script=$HOME/qemu-ifup,downscript=$HOME/qemu-ifdown
+-device virtio-net-pci,addr=0x0.0x7,bus=pcie,netdev=net0,mac=1E:4C:16:AE:DF:6B
 """
 
 "-device virtio-mouse-pci"
@@ -99,9 +101,23 @@ while True:
 """
 
 """
--netdev stream,id=vlan,addr.type=unix,addr.path=/Users/system/Downloads/network-qemu.sock -device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee
+-netdev stream,id=vlan,addr.type=unix,addr.path=~/Downloads/network-qemu.sock,reconnect=1 -device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee
 """
 
 """
 -append "root=/dev/vda rw console=ttyAMA0 video=Virtual-1:2885x1690@60"
+"""
+
+"""
+-netdev stream,id=vlan,addr.type=unix,addr.path=$HOME/Downloads/gvisor-tap-vsock/network-qemu.sock
+-device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee,bus=pcie,addr=0x0.0x3
+
+-device pcie-root-port,id=pcie1,slot=1
+
+-drive if=none,file=/dev/disk4,format=raw,index=3,media=disk,id=virtio-conn-read,cache=writethrough
+-device virtio-blk-pci,serial=conn-read,backend_defaults=on,bus=pcie1,drive=virtio-conn-read
+
+-drive if=none,file=/dev/disk5,format=raw,index=10,media=disk,id=virtio-conn-write,cache=writethrough
+-device virtio-blk-pci,serial=conn-writebackend_defaults=on,bus=pcie1,drive=virtio-conn-write,addr=0x0.0x3
+
 """
