@@ -168,11 +168,10 @@ class Qemu(BuildClass):
 
 		environment["objcc"]="/usr/bin/clang"
 
+	def configure(self):
 		"""Only needed on < 12"""
 		find_and_replace("source/qemu/block/file-posix.c", "IOMainPort", "IOMasterPort")
 		find_and_replace("source/qemu/audio/coreaudio.m", "kAudioObjectPropertyElementMain", "kAudioObjectPropertyElementMaster")
-
-	def configure(self):
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
 		num_processors=subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"], text=True).strip()
