@@ -178,7 +178,7 @@ class Qemu(BuildClass):
 		retcode=subprocess.run(["make", f"-j{num_processors}", "install"],cwd="build/qemu").returncode
 		if (retcode==0):
 			delete_everything_in_folder("build/qemu/tests")
-			delete_everything_in_folder("build/qemu/pc-bios")
+			# delete_everything_in_folder("build/qemu/pc-bios")
 
 
 if "--depot" in sys.argv:

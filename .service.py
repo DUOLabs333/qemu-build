@@ -4,7 +4,8 @@ import subprocess, os
 
 SOCKET=os.path.join(self.workdir,"qemu-monitor.sock")
 Down("sudo pkill -9 qemu-system-aarch64")
-Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarch64
+
+proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarch64
 -M virt,accel=hvf 
 -m 8G
 -cpu host
@@ -20,12 +21,19 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 -drive if=none,file=Linux.utm/Data/Arch.img,format=raw,index=0,media=disk,id=drive1
 -device virtio-blk-pci,addr=0x0.0x5,backend_defaults=on,bus=pcie,drive=drive1
 
+
+-object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/h2g,id=h2g
+-object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/g2h,id=g2h
+
+-device ivshmem-plain,memdev=h2g
+-device ivshmem-plain,memdev=g2h
+
 -audiodev coreaudio,id=audio,out.fixed-settings=false
 -device ich9-intel-hda,bus=pcie,addr=0x0.0x0,multifunction=on
 -device hda-micro,audiodev=audio
 
 -device virtio-net-pci,addr=0x0.0x3,bus=pcie,netdev=net0,mac=1E:4C:16:AE:DF:6B
--netdev vmnet-shared,id=net0
+-netdev vmnet-shared,id=net0,start-address=192.168.64.1,end-address=192.168.64.100,subnet-mask=255.255.255.0
 
 {'-icount sleep=off' if 'no-sleep' in self.flags else ''}
 
@@ -40,13 +48,14 @@ Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarc
 
 -device qemu-xhci,id=usb-controller-0
 
-""".replace("\n"," "))
-
-if False:
+""".replace("\n"," "), block=False)
+if True:
     while True:
         if os.path.exists(SOCKET):
             Run(f"sudo chown $(whoami) {SOCKET}", track=True)
             break
+
+proc.communicate()
 
 
 #-run-with user="$(id -u):$(id -g)"
@@ -91,7 +100,7 @@ if False:
 
 """
 -device virtio-net-pci,addr=0x0.0x3,bus=pcie,netdev=net0,mac=1E:4C:16:AE:DF:6B
--netdev vmnet-shared,id=net0
+-netdev vmnet-bridged,id=net0,ifname=en0
 """
 
 """
@@ -101,7 +110,8 @@ if False:
 """
 
 """
--netdev stream,id=vlan,addr.type=unix,addr.path=~/Downloads/network-qemu.sock,reconnect=1 -device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee
+-netdev stream,id=vlan,addr.type=unix,addr.path=$HOME/Downloads/gvisor-tap-vsock/network-qemu.sock,reconnect=1
+-device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee,bus=pcie,addr=0x0.0x4
 """
 
 """
@@ -109,15 +119,20 @@ if False:
 """
 
 """
--netdev stream,id=vlan,addr.type=unix,addr.path=$HOME/Downloads/gvisor-tap-vsock/network-qemu.sock
--device virtio-net-pci,netdev=vlan,mac=5a:94:ef:e4:0c:ee,bus=pcie,addr=0x0.0x3
-
 -device pcie-root-port,id=pcie1,slot=1
 
--drive if=none,file=/dev/disk4,format=raw,index=3,media=disk,id=virtio-conn-read,cache=writethrough
--device virtio-blk-pci,serial=conn-read,backend_defaults=on,bus=pcie1,drive=virtio-conn-read
+-drive if=none,file=/dev/disk4,format=raw,index=10,media=disk,id=virtio-conn-write,cache=writethrough
+-device virtio-blk-pci,serial=conn-write,backend_defaults=on,bus=pcie,drive=virtio-conn-write,addr=0x0.0x7
 
--drive if=none,file=/dev/disk5,format=raw,index=10,media=disk,id=virtio-conn-write,cache=writethrough
--device virtio-blk-pci,serial=conn-writebackend_defaults=on,bus=pcie1,drive=virtio-conn-write,addr=0x0.0x3
+-drive if=none,file=/dev/disk5,format=raw,index=3,media=disk,id=virtio-conn-read,cache=writethrough
+-device virtio-blk-pci,serial=conn-read,backend_defaults=on,bus=pcie1,drive=virtio-conn-read,addr=0x0.0x7
 
+
+-virtfs local,path=/Volumes/disk4,mount_tag=disk4,security_model=mapped,fmode=0777,dmode=0777
+
+-drive if=none,file=/Volumes/disk4/h2g,format=raw,index=10,media=disk,id=conn-h2g,cache=writeback
+-device virtio-blk-device,serial=conn-h2g,backend_defaults=on,drive=conn-h2g
+
+-drive if=none,file=/Volumes/disk4/g2h,format=raw,index=3,media=disk,id=conn-g2h,cache=writeback
+-device virtio-blk-device,serial=conn-g2h,backend_defaults=on,drive=conn-g2h
 """
