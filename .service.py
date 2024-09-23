@@ -5,7 +5,16 @@ import subprocess, os
 SOCKET=os.path.join(self.workdir,"qemu-monitor.sock")
 Down("sudo pkill -9 qemu-system-aarch64")
 
-proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-system-aarch64
+ivshmem="""
+
+-object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/h2g,id=h2g
+-object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/g2h,id=g2h
+
+-device ivshmem-plain,memdev=h2g
+-device ivshmem-plain,memdev=g2h
+"""
+
+proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-profile/lib" qemu/bin/qemu-system-aarch64
 -M virt,accel=hvf 
 -m 8G
 -cpu host
@@ -22,11 +31,8 @@ proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib" qemu/bin/qemu-syst
 -device virtio-blk-pci,addr=0x0.0x5,backend_defaults=on,bus=pcie,drive=drive1
 
 
--object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/h2g,id=h2g
--object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/g2h,id=g2h
+{ivshmem if "ivshmem" in self.flags else ''}
 
--device ivshmem-plain,memdev=h2g
--device ivshmem-plain,memdev=g2h
 
 -audiodev coreaudio,id=audio,out.fixed-settings=false
 -device ich9-intel-hda,bus=pcie,addr=0x0.0x0,multifunction=on
@@ -135,4 +141,6 @@ proc.communicate()
 
 -drive if=none,file=/Volumes/disk4/g2h,format=raw,index=3,media=disk,id=conn-g2h,cache=writeback
 -device virtio-blk-device,serial=conn-g2h,backend_defaults=on,drive=conn-g2h
+
+-device virtio-gpu-rutabaga,gfxstream-vulkan=on,hostmem=256M,cross-domain=on
 """
