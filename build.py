@@ -157,7 +157,6 @@ class Qemu(BuildClass):
 		--enable-cocoa
 		--disable-curl
 		--enable-libusb
-		--enable-rutabaga-gfx
 		"""
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
