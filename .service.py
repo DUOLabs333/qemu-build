@@ -1,7 +1,6 @@
 import subprocess, os
 #Menu bar is 56 pixels
 
-
 SOCKET=os.path.join(self.workdir,"qemu-monitor.sock")
 Down("sudo pkill -9 qemu-system-aarch64")
 
@@ -15,8 +14,8 @@ ivshmem="""
 """
 
 proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-profile/lib" qemu/bin/qemu-system-aarch64
--M virt,accel=hvf 
--m 8G
+-M virt,accel=hvf
+-m 10G
 -cpu host
 -smp {Run("getconf _NPROCESSORS_ONLN",pipe=True,track=False).strip()}
 -kernel Linux.utm/Data/Image 
@@ -30,9 +29,7 @@ proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-
 -drive if=none,file=Linux.utm/Data/Arch.img,format=raw,index=0,media=disk,id=drive1
 -device virtio-blk-pci,addr=0x0.0x5,backend_defaults=on,bus=pcie,drive=drive1
 
-
 {ivshmem if "ivshmem" in self.flags else ''}
-
 
 -audiodev coreaudio,id=audio,out.fixed-settings=false
 -device ich9-intel-hda,bus=pcie,addr=0x0.0x0,multifunction=on
@@ -53,6 +50,8 @@ proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-
 -device virtserialport,chardev=spice,name=com.redhat.spice.0
 
 -device qemu-xhci,id=usb-controller-0
+
+-device virtio-balloon
 
 """.replace("\n"," "), block=False)
 if True:
