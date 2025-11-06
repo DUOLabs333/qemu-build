@@ -15,7 +15,7 @@ ivshmem="""
 
 proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-profile/lib" qemu/bin/qemu-system-aarch64
 -M virt,accel=hvf
--m 10G
+-m 8G
 -cpu host
 -smp {Run("getconf _NPROCESSORS_ONLN",pipe=True,track=False).strip()}
 -kernel Linux.utm/Data/Image 
@@ -40,7 +40,7 @@ proc = Run(f"""sudo env "DYLD_FALLBACK_LIBRARY_PATH=qemu/lib:/Users/system/.nix-
 
 {'-icount sleep=off' if 'no-sleep' in self.flags else ''}
 
--device virtio-gpu-gl-pci,addr=0x0.0x1,bus=pcie,edid=off,xres=2880,yres=1690
+-device virtio-gpu-pci,addr=0x0.0x1,bus=pcie,edid=off,xres=2880,yres=1690
 -display cocoa,gl=es,full-grab=on,zoom-to-fit=on,zoom-interpolation=on
 
 -device virtio-keyboard-pci,addr=0x0.0x2,bus=pcie
@@ -61,7 +61,6 @@ if True:
             break
 
 proc.communicate()
-
 
 #-run-with user="$(id -u):$(id -g)"
 

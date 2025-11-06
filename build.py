@@ -57,7 +57,7 @@ class BuildClass:
 			if method in options_dict[self.name]:
 				getattr(self,method)()
 
-	def download(self):
+	def download(self): #Sometimes you may have to pull, then do "git reset origin/macos --hard"
 		git_clone(f"https://github.com/akihikodaki/{self.name}.git","macos","source")
 
 class Angle(BuildClass):
@@ -125,8 +125,7 @@ class Virglrenderer(BuildClass):
 
 	def configure(self):
 		subprocess.run(["meson", "setup", f"-Dc_args=-I{os.getcwd()}/source/angle/include",
-			"-Dtests=false",
-		f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
+			"-Dtests=false", f"--pkg-config-path={os.getcwd()}/lib/pkgconfig", f"--prefix={os.getcwd()}","build/virglrenderer","source/virglrenderer"])
 	def build(self):
 		subprocess.run(["meson","install","-C","build/virglrenderer"])
 		
@@ -160,18 +159,30 @@ class Qemu(BuildClass):
 		"""
 
 		self.qemu_flags=list(filter(None,textwrap.dedent(self.qemu_flags).splitlines()))
-		environment["PKG_CONFIG_PATH"]=os.pathsep.join([environment["PKG_CONFIG_PATH"],os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"])
-		environment["CC"]="/usr/bin/clang"
-		environment["CC_LD"]="/usr/bin/ld"
+		environment["PKG_CONFIG_PATH"]=os.pathsep.join([environment["PKG_CONFIG_PATH"],os.getcwd()+"/lib/pkgconfig","/opt/homebrew/lib/pkgconfig","/opt/homebrew/opt/spice-protocol/share/pkgconfig"]) #I used [] instead of .get() to force myself to remember to always set it
+		#environment["CC"]="/usr/bin/clang"
+		#environment["CC_LD"]="/usr/bin/ld"
 		
-		environment["CXX"]="/usr/bin/clang++"
+		#environment["CXX"]="/usr/bin/clang++"
 
-		environment["objcc"]="/usr/bin/clang"
+		#environment["objcc"]="/usr/bin/clang"
 
 	def configure(self):
-		"""Only needed on < 12"""
+		#Only needed on < 12
 		find_and_replace("source/qemu/block/file-posix.c", "IOMainPort", "IOMasterPort")
 		find_and_replace("source/qemu/audio/coreaudio.m", "kAudioObjectPropertyElementMain", "kAudioObjectPropertyElementMaster")
+
+		#Only needed on < 13
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_default_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret HV_SUCCESS;")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_max_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret HV_SUCCESS;")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "round_down_to_parange_bit_size(max_ipa_size)", "0");
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_vm_config_t config = hv_vm_config_create();", "hv_vm_config_t config = NULL;")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "ret = hv_vm_config_set_ipa_size(config, pa_range);", "ret = HV_SUCCESS")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "chosen_ipa_bit_size = pa_range;", "")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "clamp_id_aa64mmfr0_parange_to_ipa_size(&host_isar.id_aa64mmfr0);", "")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "clamp_id_aa64mmfr0_parange_to_ipa_size(&arm_cpu->isar.id_aa64mmfr0);", "")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "virt_hvf_get_physical_address_range(MachineState *ms)\n{", "virt_hvf_get_physical_address_range(MachineState *ms)\n{return 0;}")
+
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
 		num_processors=subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"], text=True).strip()
