@@ -4,6 +4,9 @@ import subprocess, os
 SOCKET=os.path.join(self.workdir,"qemu-monitor.sock")
 Down("sudo pkill -9 qemu-system-aarch64")
 
+#diskutil erasevolume HFS+ 'disk4' `hdiutil attach -nobrowse -nomount ram://$((2048*100))`
+#dd if=/dev/zero of=/Volumes/disk4/h2g bs=1M count=48
+#dd if=/dev/zero of=/Volumes/disk4/g2h bs=1M count=48
 ivshmem="""
 
 -object memory-backend-file,size=32M,share=on,mem-path=/Volumes/disk4/h2g,id=h2g

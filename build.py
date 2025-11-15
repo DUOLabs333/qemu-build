@@ -173,8 +173,8 @@ class Qemu(BuildClass):
 		find_and_replace("source/qemu/audio/coreaudio.m", "kAudioObjectPropertyElementMain", "kAudioObjectPropertyElementMaster")
 
 		#Only needed on < 13
-		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_default_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret HV_SUCCESS;")
-		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_max_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret HV_SUCCESS;")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_default_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret = HV_SUCCESS;")
+		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_return_t ret = hv_vm_config_get_max_ipa_size(&default_ipa_size);", "default_ipa_size=0; hv_return_t ret = HV_SUCCESS;")
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "round_down_to_parange_bit_size(max_ipa_size)", "0");
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "hv_vm_config_t config = hv_vm_config_create();", "hv_vm_config_t config = NULL;")
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "ret = hv_vm_config_set_ipa_size(config, pa_range);", "ret = HV_SUCCESS")
@@ -182,6 +182,10 @@ class Qemu(BuildClass):
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "clamp_id_aa64mmfr0_parange_to_ipa_size(&host_isar.id_aa64mmfr0);", "")
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "clamp_id_aa64mmfr0_parange_to_ipa_size(&arm_cpu->isar.id_aa64mmfr0);", "")
 		find_and_replace("source/qemu/target/arm/hvf/hvf.c", "virt_hvf_get_physical_address_range(MachineState *ms)\n{", "virt_hvf_get_physical_address_range(MachineState *ms)\n{return 0;}")
+		
+		find_and_replace("source/qemu/meson.build", "have_ivshmem = config_host_data.get('CONFIG_EVENTFD')", "have_ivshmem = host_os == 'darwin'")
+		find_and_replace("source/qemu/hw/misc/Kconfig", "depends on PCI && LINUX && IVSHMEM && MSI_NONBROKEN", "depends on PCI && IVSHMEM && MSI_NONBROKEN")
+		find_and_replace("source/qemu/hw/misc/ivshmem-pci.c", "event_notifier_init_fd(&peer->eventfds[vector], fd);", "")
 
 		subprocess.run(["../../source/qemu/configure"]+self.qemu_flags,env=environment,cwd="build/qemu")
 	def build(self):
